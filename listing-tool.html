@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wolf Kline Listing Tools</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;}
+
+    /* ── Header ── */
+    .header{background:#2d3748;color:white;padding:14px 24px;display:flex;align-items:center;gap:16px;}
+    .header h1{font-size:1.15rem;white-space:nowrap;}
+    .tabs{display:flex;gap:4px;margin-left:auto;}
+    .tab-btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:0.88rem;font-weight:600;background:rgba(255,255,255,0.15);color:white;transition:background .15s;}
+    .tab-btn.active{background:white;color:#2d3748;}
+    .tab-btn:hover:not(.active){background:rgba(255,255,255,0.25);}
+
+    /* ── Layout ── */
+    .tab-content{display:none;padding:28px 24px;max-width:1280px;margin:0 auto;}
+    .tab-content.active{display:block;}
+    .card{background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:24px;margin-bottom:20px;}
+
+    /* ── Form ── */
+    label{display:block;font-weight:600;color:#2d3748;margin-bottom:6px;font-size:.93rem;}
+    .hint{color:#718096;font-size:.8rem;margin-bottom:8px;}
+    input[type=text],textarea{width:100%;padding:9px 13px;border:2px solid #e2e8f0;border-radius:7px;font-size:.93rem;outline:none;font-family:inherit;transition:border-color .15s;}
+    input[type=text]:focus,textarea:focus{border-color:#4299e1;}
+    textarea{resize:vertical;font-family:'Courier New',monospace;font-size:.82rem;line-height:1.5;}
+    .btn{padding:11px 18px;border:none;border-radius:7px;font-size:.93rem;font-weight:600;cursor:pointer;transition:all .15s;}
+    .btn-primary{background:#4299e1;color:white;width:100%;margin-top:10px;}
+    .btn-primary:hover{background:#3182ce;}
+    .btn-sm{padding:6px 12px;font-size:.8rem;border:1px solid #cbd5e0;background:#edf2f7;color:#4a5568;border-radius:6px;cursor:pointer;}
+    .btn-sm:hover{background:#e2e8f0;}
+
+    /* ── Checker result ── */
+    .platforms-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px;}
+    .p-card{border-radius:7px;padding:11px 13px;display:flex;align-items:center;gap:9px;font-weight:600;font-size:.88rem;}
+    .p-card.yes{background:#f0fff4;border:2px solid #68d391;color:#276749;}
+    .p-card.no{background:#fff5f5;border:2px solid #fc8181;color:#c53030;}
+    .p-card.unk{background:#faf5ff;border:2px solid #b794f4;color:#553c9a;}
+    .note-box{padding:10px 14px;border-radius:6px;font-size:.85rem;margin-bottom:8px;line-height:1.4;}
+    .note-box.success{background:#f0fff4;border-left:4px solid #68d391;color:#276749;}
+    .note-box.warning{background:#fffbeb;border-left:4px solid #f6ad55;color:#744210;}
+    .note-box.info{background:#ebf8ff;border-left:4px solid #63b3ed;color:#2a4a6b;}
+    .note-box.unknown{background:#faf5ff;border-left:4px solid #b794f4;color:#553c9a;}
+    .matched-as{font-size:.81rem;color:#718096;margin-bottom:11px;font-style:italic;}
+
+    /* ── Reference table ── */
+    .ref-toggle{background:none;border:1px solid #cbd5e0;border-radius:6px;padding:8px 14px;font-size:.83rem;color:#4a5568;cursor:pointer;font-weight:600;width:100%;text-align:left;}
+    .ref-toggle:hover{background:#f7fafc;}
+    .ref-table-wrap{display:none;margin-top:12px;overflow-x:auto;}
+    table.ref-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+    .ref-table th{background:#edf2f7;color:#4a5568;font-weight:700;padding:7px 10px;text-align:left;border-bottom:2px solid #cbd5e0;}
+    .ref-table td{padding:6px 10px;border-bottom:1px solid #e2e8f0;color:#2d3748;}
+    .ref-table tr:last-child td{border-bottom:none;}
+    .ref-table tr:nth-child(even) td{background:#f7fafc;}
+
+    /* ── Tracking table ── */
+    .tbl-wrap{overflow-x:auto;margin-top:4px;}
+    table.tbl{width:100%;border-collapse:collapse;font-size:.79rem;min-width:960px;}
+    .tbl th{background:#2d3748;color:white;padding:7px 7px;font-weight:600;text-align:left;white-space:nowrap;position:sticky;top:0;z-index:1;}
+    .tbl th.center{text-align:center;}
+    .tbl .section-hdr td{background:#4a5568;color:white;font-weight:700;font-size:.75rem;padding:5px 9px;letter-spacing:.05em;text-transform:uppercase;}
+    .tbl td{padding:6px 7px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
+    .tbl tr.data-row:hover td{background:#f7fafc;}
+    .tbl tr.data-row.row-highlight td{background:#fffbeb !important;}
+    .tbl tr.data-row.row-highlight:hover td{background:#fff8d6 !important;}
+    .tbl input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:#4299e1;}
+    .tbl input[type=text]{padding:3px 6px;font-size:.77rem;border:1px solid #e2e8f0;border-radius:4px;width:100%;min-width:70px;background:white;}
+    .tbl input[type=text]:focus{border-color:#4299e1;outline:none;}
+    .na{color:#cbd5e0;text-align:center;}
+    .center{text-align:center;}
+    .addr{font-weight:600;white-space:nowrap;}
+    .avail{font-weight:700;color:#2b6cb0;white-space:nowrap;}
+    .avail.holiday{color:#c05621;}
+    .price{white-space:nowrap;}
+
+    /* ── Badges ── */
+    .badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.72rem;font-weight:600;white-space:nowrap;}
+    .badge.all{background:#c6f6d5;color:#276749;}
+    .badge.z2{background:#e9d8fd;color:#553c9a;}
+    .badge.web{background:#bee3f8;color:#2a4a6b;}
+    .badge.unk{background:#feebc8;color:#7b341e;}
+
+    hr{border:none;border-top:1px solid #e2e8f0;margin:20px 0;}
+
+    /* ── Friday Check ── */
+    .fri-row{display:flex;gap:16px;align-items:center;padding:9px 4px;border-bottom:1px solid #e2e8f0;font-size:.86rem;}
+    .fri-row:last-child{border-bottom:none;}
+    .fri-row:hover{background:#f7fafc;border-radius:6px;}
+    .fri-row.flagged{background:#fff5f5;}
+    .fri-row .comm{flex:2;font-weight:600;color:#2d3748;}
+    .fri-row .city{flex:1;color:#718096;}
+    .fri-row .cb-cell{width:110px;text-align:center;}
+    .fri-row .cb-cell input{width:18px;height:18px;cursor:pointer;accent-color:#4299e1;}
+    .fri-row .notes-cell{flex:1;}
+    .fri-row .notes-cell input{width:100%;padding:3px 7px;font-size:.78rem;border:1px solid #e2e8f0;border-radius:4px;}
+    .flag-badge{display:inline-block;background:#fed7d7;color:#c53030;font-size:.7rem;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:6px;}
+    .fri-section-hdr{background:#edf2f7;color:#4a5568;font-weight:700;font-size:.75rem;padding:6px 4px;border-radius:6px;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.05em;}
+    .legend{font-size:.78rem;color:#a0aec0;text-align:center;}
+
+    /* ── Community Detail ── */
+    .modal-section{margin-bottom:16px;}
+    .modal-chips{display:flex;flex-wrap:wrap;gap:6px;}
+    .chip{display:inline-block;padding:4px 10px;border-radius:20px;font-size:.82rem;font-weight:600;}
+    .chip.street{background:#ebf8ff;color:#2a4a6b;}
+    .chip.abbrev{background:#fefcbf;color:#744210;}
+    .chip.none{background:#f7fafc;color:#a0aec0;font-style:italic;font-weight:400;}
+    .modal-platforms{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .gen-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+    .gen-header h2{font-size:.98rem;color:#2d3748;}
+    .key{display:flex;gap:10px;flex-wrap:wrap;font-size:.75rem;margin-bottom:12px;}
+    .key-item{display:flex;align-items:center;gap:5px;color:#4a5568;}
+
+    /* ── Home Tab ── */
+    .week-card{background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;transition:box-shadow .15s;}
+    .week-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);background:white;}
+    .week-card-left{display:flex;flex-direction:column;gap:2px;}
+    .week-card-label{font-weight:600;color:#2d3748;font-size:.93rem;}
+    .week-card-meta{font-size:.76rem;color:#718096;}
+    .flag-row{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:8px;margin-bottom:7px;background:white;border:1px solid #e2e8f0;flex-wrap:wrap;}
+    .flag-row.flag{border-left:4px solid #fc8181;}
+    .flag-row.warn{border-left:4px solid #f6ad55;}
+    .flag-row.ok{border-left:4px solid #68d391;}
+    .flag-row-addr{font-weight:600;color:#2d3748;font-size:.88rem;min-width:160px;}
+    .flag-row-meta{font-size:.76rem;color:#718096;flex:1;}
+    .days-badge{padding:3px 10px;border-radius:10px;font-size:.76rem;font-weight:700;white-space:nowrap;}
+    .days-badge.ok{background:#c6f6d5;color:#276749;}
+    .days-badge.warn{background:#fefcbf;color:#744210;}
+    .days-badge.flag{background:#fed7d7;color:#c53030;}
+    .empty-state{text-align:center;color:#a0aec0;font-size:.87rem;padding:20px;font-style:italic;}
+
+    /* ── Off Market Tab ── */
+    .om-result{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:8px;background:white;flex-wrap:wrap;}
+    .om-result.done{background:#f7fafc;opacity:.6;}
+    .om-result-addr{font-weight:700;color:#2d3748;font-size:.93rem;flex:1;min-width:160px;}
+    .om-result-meta{font-size:.78rem;color:#718096;}
+    .om-btn{padding:6px 14px;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;}
+    .om-btn.mark{background:#fed7d7;color:#c53030;}
+    .om-btn.mark:hover{background:#fc8181;color:white;}
+    .om-btn.undo{background:#edf2f7;color:#4a5568;}
+    .om-btn.undo:hover{background:#e2e8f0;}
+
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏠 Wolf Kline Listing Tools</h1>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('home',this)">Home</button>
+    <button class="tab-btn" onclick="showTab('checker',this)">Platform Checker</button>
+    <button class="tab-btn" onclick="showTab('generator',this)">Weekly Generator</button>
+    <button class="tab-btn" onclick="showTab('offmarket',this)">Off Market</button>
+    <button class="tab-btn" onclick="showTab('friday',this)">Friday Check</button>
+    <button class="tab-btn" onclick="showTab('apts',this);buildAptsTab()">Apts.com</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB 0 · HOME
+══════════════════════════════════════════════ -->
+<div id="tab-home" class="tab-content active">
+  <div class="card">
+    <div class="gen-header">
+      <h2>🚨 Listings Needing Attention</h2>
+      <button class="btn-sm" onclick="buildHomeTab()">↺ Refresh</button>
+    </div>
+    <p class="hint" style="margin-bottom:14px;">Verified listings are tracked from the date you marked them done. Flag appears at 21 days — Apts.com deactivates at that point.</p>
+    <div id="home-flags"><p class="empty-state">No listings currently flagged.</p></div>
+  </div>
+  <div class="card">
+    <div class="gen-header">
+      <h2>📋 Saved Weekly Sheets</h2>
+      <button class="btn-sm" onclick="if(confirm('Delete ALL saved data? This cannot be undone.')) { localStorage.removeItem(\'wk_data\'); buildHomeTab(); }">🗑 Clear All</button>
+    </div>
+    <div id="home-weeks"><p class="empty-state">No saved sheets yet. Generate a weekly sheet to get started.</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB 1 · PLATFORM CHECKER
+══════════════════════════════════════════════ -->
+<div id="tab-checker" class="tab-content">
+  <div class="card">
+    <label for="q">Street / Address / Abbreviation / Community Name</label>
+    <p class="hint">Type anything — street name, abbreviation (e.g. CC, PW, US), community name, or a full address.</p>
+    <input type="text" id="q" placeholder="e.g. Travertine, 419, CC, Bramble Lane, 123 Oak St…"/>
+    <button class="btn btn-primary" onclick="checkPlatform()">Check Platforms</button>
+    <div id="checker-result" style="margin-top:18px;"></div>
+  </div>
+
+  <div class="card">
+    <label for="comm-select">Community Details</label>
+    <p class="hint">Select a community to see its street names, abbreviations, and platform rules.</p>
+    <select id="comm-select" onchange="showCommunityDetail(this.value)" style="width:100%;padding:9px 13px;border:2px solid #e2e8f0;border-radius:7px;font-size:.93rem;outline:none;background:white;cursor:pointer;">
+      <option value="">— Select a community —</option>
+    </select>
+    <div id="comm-detail" style="margin-top:16px;"></div>
+  </div>
+
+  <div class="card">
+    <button class="ref-toggle" onclick="toggleRef(this)">📋 View Full Community Reference Table ▾</button>
+    <div class="ref-table-wrap" id="refTable">
+      <table class="ref-table">
+        <thead><tr><th>Street Name</th><th>Abbrev.</th><th>Community</th><th>City</th><th>Platforms</th></tr></thead>
+        <tbody id="refBody"></tbody>
+      </table>
+    </div>
+    <hr/>
+    <p class="legend">Wolf Kline Property Management &nbsp;·&nbsp; Last updated April 2026</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB · OFF MARKET
+══════════════════════════════════════════════ -->
+<div id="tab-offmarket" class="tab-content">
+  <div class="card">
+    <label for="om-search">Mark a Listing Off Market</label>
+    <p class="hint" style="margin-bottom:10px;">Type the address and the tool will find it across all saved weekly sheets.</p>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="om-search" placeholder="e.g. 52 Michael, Ramsgate, Creek Corner…"
+        style="flex:1;" onkeydown="if(event.key==='Enter') searchOffMarket()">
+      <button class="btn btn-primary" style="width:auto;margin:0;white-space:nowrap;" onclick="searchOffMarket()">🔍 Search</button>
+    </div>
+    <div id="om-results" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB 3 · FRIDAY COMMUNITY CHECK
+══════════════════════════════════════════════ -->
+<div id="tab-friday" class="tab-content">
+  <div class="card">
+    <div class="gen-header">
+      <h2>📋 Friday Community Display Check</h2>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm" onclick="resetFridayCheck()">↺ Reset All</button>
+        <button class="btn-sm" onclick="window.print()">🖨 Print</button>
+      </div>
+    </div>
+    <p class="hint" style="margin-bottom:16px;">Check off each community every Friday. Flag any that have active listings but aren't currently displayed on the website.</p>
+
+    <div style="display:flex;gap:16px;margin-bottom:14px;font-size:.8rem;font-weight:600;color:#4a5568;padding:0 4px;">
+      <span style="flex:2;">Community</span>
+      <span style="flex:1;">City</span>
+      <span style="width:90px;text-align:center;">Active Listings</span>
+      <span style="width:110px;text-align:center;">No Active Listings</span>
+      <span style="width:110px;text-align:center;">Displayed on Site</span>
+      <span style="width:110px;text-align:center;">Working Map</span>
+      <span style="flex:1;">Notes</span>
+    </div>
+
+    <div id="friday-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB · APTS.COM
+══════════════════════════════════════════════ -->
+<div id="tab-apts" class="tab-content">
+  <div id="apts-tab-content"><p class="empty-state" style="padding:40px;">Loading…</p></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB 2 · WEEKLY GENERATOR
+══════════════════════════════════════════════ -->
+<div id="tab-generator" class="tab-content">
+
+  <!-- ── New Sheet area ── -->
+  <div class="card" id="new-sheet-card">
+    <div class="gen-header">
+      <h2>⚡ Generate New Sheet</h2>
+      <button class="btn-sm" onclick="toggleNewSheet()">▲ Collapse</button>
+    </div>
+    <div id="new-sheet-body">
+      <p class="hint" style="margin-bottom:8px;">One listing per line · Format: "701 Winding Ln- $1750, vacating 6/12" or "500 CC, Apt 31- $1750, vacating 5/31"</p>
+      <textarea id="emailInput" rows="10" placeholder="Paste email here…"></textarea>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label for="weekLabel" style="margin:0;white-space:nowrap;font-size:.88rem;color:#718096;">Week label (optional):</label>
+          <input type="text" id="weekLabel" placeholder="e.g. Week of March 10, 2025" style="width:220px;padding:6px 10px;font-size:.85rem;">
+        </div>
+        <button class="btn btn-primary" style="margin:0;flex:1;min-width:180px;" onclick="generateSheetSafe()">⚡ Generate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Loaded sheet area ── -->
+  <div id="gen-output"></div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════
+
+const LISTINGS = [
+  {street:"Ammon Avenue",     abbrev:"",   community:"Timber Ridge Terrace",    city:"Etown",          rule:"unknown"},
+  {street:"Bramble Lane",     abbrev:"",   community:"Briar Ridge Commons",     city:"Lebanon",        rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Creek Corner Drive",abbrev:"CC",community:"Creek Corner",            city:"Ephrata",        rule:"web",     note:"Website only. 2-week vacancy-to-availability turn time.", turnWeeks:2},
+  {street:"Fish Barn",        abbrev:"",   community:"Red Mill Crossings",      city:"Etters",         rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Fulton",           abbrev:"",   community:"Trailside Apartments",    city:"Akron",          rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Hilldale",         abbrev:"",   community:"Covered Bridge Estates",   city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Hammon",           abbrev:"",   community:"Meadow Creek",             city:"Ephrata",        rule:"web",     note:"Website only. 2-week vacancy-to-availability turn time.", sfh:true, turnWeeks:2},
+  {street:"Houck",            abbrev:"",   community:"Holly Tree",              city:"Manheim",        rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Madison Drive",    abbrev:"MS", community:"Market Square Apts.",     city:"Leola",          rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Martin Ave",       abbrev:"",   community:"Sycamore Acres",          city:"Ephrata",        rule:"unknown"},
+  {street:"Meadow Valley Road",abbrev:"MV",community:"Willow Creek Estates",   city:"Ephrata",        rule:"web",     note:"Website only — not on Zillow, Zillow 2, or Apts.com. 2-week vacancy-to-availability turn time.", sfh:false, turnWeeks:2},
+  {street:"Mill Creek Dr.",   abbrev:"RM", community:"Red Mill Crossing",       city:"Etters",         rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Pequea Manor Dr.", abbrev:"PM", community:"Paradise Meadow",         city:"Gordonville",    rule:"web+z1",  note:"Website + Zillow only — not on Apts.com."},
+  {street:"Pinnacle Ridge",   abbrev:"PW", community:"Park West",               city:"Mechanicsburg",  rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Pond Vista",       abbrev:"PV", community:"Holly Tree",              city:"Manheim",        rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Ramsgate",         abbrev:"",   community:"Charleston",              city:"Lancaster",      rule:"all",     note:"Website + Zillow + Apts.com. 2-week vacancy-to-availability turn time.", turnWeeks:2},
+  {street:"Rollins Lane",     abbrev:"",   community:"Willow Run",              city:"Willow Street",  rule:"unknown"},
+  {street:"Shady Oak Dr",     abbrev:"",   community:"Shady Oak Apts.",         city:"Mt. Joy",        rule:"all",     note:"Townhome community — all platforms."},
+  {street:"Summit Drive",     abbrev:"",   community:"Summit Living",           city:"Lancaster",      rule:"web",     note:"Website only."},
+  {street:"Cobblestone",      abbrev:"",   community:"Stone Gate",               city:"Stevens",        rule:"all",     note:"Website + Zillow + Apts.com. 2-week vacancy-to-availability turn time.",  sfh:true, turnWeeks:2},
+  {street:"Robert Circle",    abbrev:"",   community:"Town's Edge",              city:"Lebanon",        rule:"web",     note:"Website only."},
+  {street:"Winding Lane",     abbrev:"",   community:"",                         city:"Harrisburg",     rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Lincoln Heights",  abbrev:"",   community:"",                         city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Clay School Road", abbrev:"",   community:"",                         city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Woodridge",        abbrev:"",   community:"",                         city:"Middletown",     rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Wildflower",       abbrev:"",   community:"",                         city:"East Earl",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Maize Circle",     abbrev:"",   community:"",                         city:"Elizabethtown",  rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Broken Arrow",     abbrev:"",   community:"",                         city:"Elizabethtown",  rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Masonic Drive",    abbrev:"",   community:"",                         city:"Elizabethtown",  rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Burk Ct",          abbrev:"",   community:"",                         city:"Womelsdorf",     rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"South Cedar",      abbrev:"",   community:"",                         city:"Manheim",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Linda Sue Lane",   abbrev:"",   community:"",                         city:"Myerstown",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"White Chapel",     abbrev:"",   community:"",                         city:"Lancaster",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Cedar Hollow",     abbrev:"",   community:"",                         city:"Manheim",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Gable Drive",      abbrev:"",   community:"",                         city:"Myerstown",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Deep Run",         abbrev:"",   community:"",                         city:"Myerstown",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"East Chestnut",    abbrev:"",   community:"",                         city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"East Walnut",      abbrev:"",   community:"",                         city:"Ephrata",        rule:"web+z1",  note:"Website + Zillow only — not on Apts.com."},
+  {street:"Gross",            abbrev:"",   community:"",                         city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Tom",              abbrev:"",   community:"",                         city:"Ephrata",        rule:"web+z1",  note:"Website + Zillow only — not on Apts.com."},
+  {street:"Hay Road",         abbrev:"",   community:"Hay Road",                 city:"Temple",         rule:"web",     note:"Website only."},
+  {street:"Commerce",         abbrev:"",   community:"Hay Road",                 city:"Temple",         rule:"web",     note:"Website only."},
+  {street:"Millard Drive",    abbrev:"",   community:"Stone Hill",               city:"Annville",       rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Church",           abbrev:"",   community:"",                         city:"Denver",         rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Michael",          abbrev:"",   community:"",                         city:"Denver",         rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Farmwood",         abbrev:"",   community:"",                         city:"Lebanon",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Greenland",        abbrev:"",   community:"",                         city:"Lancaster",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Londonderry",      abbrev:"",   community:"",                         city:"Palmyra",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"South Reading Road",abbrev:"",  community:"",                         city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Mayer",            abbrev:"",   community:"",                         city:"Lancaster",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Garden",           abbrev:"",   community:"",                         city:"Myerstown",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Greystone",        abbrev:"",   community:"",                         city:"Lebanon",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Stonemill",        abbrev:"",   community:"",                         city:"Lancaster",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Westpointe",       abbrev:"",   community:"",                         city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"West Main",        abbrev:"",   community:"",                         city:"Adamstown",      rule:"web+z1",  note:"Website + Zillow only — not on Apts.com."},
+  {street:"Diamond Spring Circle", abbrev:"", community:"",                    city:"Akron",          rule:"web+z1",  note:"Website + Zillow only — not on Apts.com."},
+  {street:"Brunnerville Road", abbrev:"",   community:"",                         city:"Lititz",         rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"S. Broad",         abbrev:"",   community:"",                         city:"Lititz",         rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Creek Hill Road",  abbrev:"",   community:"",                         city:"Leola",          rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Lincoln Court",    abbrev:"",   community:"",                         city:"East Petersburg", rule:"all",    note:"Website + Zillow + Apts.com."},
+  {street:"East Elm",         abbrev:"",   community:"",                         city:"Lebanon",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Thornberry",       abbrev:"",   community:"Kissel Hill Crest Apts.", city:"Lititz",         rule:"unknown"},
+  {street:"Travertine",       abbrev:"",   community:"419 Apartments",          city:"Lebanon",        rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Union Green Way",  abbrev:"US", community:"Union Summit Apts.",      city:"Harrisburg",     rule:"web+z2",  note:"Large complex — Website + Zillow 2 only."},
+  {street:"Wallingford",      abbrev:"",   community:"Kissel Hill Commons",     city:"Lititz",         rule:"web",     note:"Website only. 2-week vacancy-to-availability turn time.", turnWeeks:2},
+  {street:"Musser",            abbrev:"",   community:"",                         city:"East Earl",      rule:"web+z1",  note:"Website + Zillow only — not on Apts.com."},
+  {street:"Quaking Aspen",    abbrev:"",   community:"",                         city:"Marietta",       rule:"web+z1",  note:"Website + Zillow only — not on Apts.com."},
+  {street:"Heron Drive",      abbrev:"",   community:"",                         city:"Denver",         rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"N Market",         abbrev:"",   community:"",                         city:"Elizabethtown",  rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Oak Leaf",         abbrev:"",   community:"",                         city:"Harrisburg",     rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Mount Sidney",     abbrev:"",   community:"",                         city:"Lancaster",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Beaver Valley Pike",abbrev:"",  community:"",                         city:"Lancaster",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Fox Ridge",        abbrev:"",   community:"",                         city:"Lebanon",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Nancy Drive",      abbrev:"",   community:"",                         city:"Myerstown",      rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Byler Circle",     abbrev:"",   community:"",                         city:"Lebanon",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Martindale Road",  abbrev:"",   community:"",                         city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+  {street:"Parkview Terrace", abbrev:"",   community:"",                         city:"Ephrata",        rule:"all",     note:"Website + Zillow + Apts.com."},
+];
+
+// Communities using 2-week (14-day) availability rule
+const TWO_WEEK = new Set([
+  "419 apartments","419","briar ridge commons","briar ridge","red mill crossings","red mill crossing","red mill",
+  "market square apts","market square","union summit apts","union summit","holly tree","park west"
+]);
+
+// Federal holidays — observed dates — 2026 & 2027
+const HOLIDAYS = new Set([
+  "2026-01-01","2026-01-19","2026-02-16","2026-05-25","2026-06-19",
+  "2026-07-03", // Independence Day observed (Jul 4 = Sat → Fri Jul 3)
+  "2026-09-07","2026-10-12","2026-11-11","2026-11-26","2026-12-25",
+  "2027-01-01","2027-01-18","2027-02-15","2027-05-31",
+  "2027-06-18", // Juneteenth observed (Jun 19 = Sat → Fri Jun 18)
+  "2027-07-05", // Independence Day observed (Jul 4 = Sun → Mon Jul 5)
+  "2027-09-06","2027-10-11","2027-11-11","2027-11-25",
+  "2027-12-24", // Christmas observed (Dec 25 = Sat → Fri Dec 24)
+]);
+
+// ══════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════
+
+const norm = s => {
+  let r = (s||'').toLowerCase().trim();
+  // Expand directional abbreviations (before stripping periods)
+  r = r.replace(/\be\.\s*/g, 'east ');
+  r = r.replace(/\bw\.\s*/g, 'west ');
+  r = r.replace(/\bn\.\s*/g, 'north ');
+  r = r.replace(/\bs\.\s*/g, 'south ');
+  // Expand street suffix abbreviations
+  r = r.replace(/\bln\.?\b/g,   'lane');
+  r = r.replace(/\bct\.?\b/g,   'court');
+  r = r.replace(/\bdr\.?\b/g,   'drive');
+  r = r.replace(/\bave\.?\b/g,  'avenue');
+  r = r.replace(/\bblvd\.?\b/g, 'boulevard');
+  r = r.replace(/\brd\.?\b/g,   'road');
+  r = r.replace(/\bpl\.?\b/g,   'place');
+  r = r.replace(/\bst\.?\b/g,   'street');
+  // Strip remaining punctuation and normalize spaces
+  return r.replace(/[^a-z0-9\s]/g,'').trim().replace(/\s+/g,' ');
+};
+
+const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
+
+const fmtDate = d => d ? `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}` : '';
+
+const isHoliday = d => HOLIDAYS.has(d.toISOString().split('T')[0]);
+
+function parseVacateDate(month, day) {
+  const now = new Date();
+  const yr = month >= (now.getMonth()+1) ? now.getFullYear() : now.getFullYear()+1;
+  return new Date(yr, month-1, day);
+}
+
+// ══════════════════════════════════════════════════════════
+// AVAILABILITY DATE CALCULATOR
+// ══════════════════════════════════════════════════════════
+
+function calcAvail(vacateDate, community) {
+  const days = TWO_WEEK.has(norm(community||'')) ? 14 : 21;
+  let d = addDays(vacateDate, days);
+  let changed = true, i = 0;
+  while (changed && i++ < 20) {
+    changed = false;
+    const day = d.getDay();
+    if (day === 6)              { d = addDays(d, 2);  changed = true; continue; } // Sat → Mon
+    if (day === 0)              { d = addDays(d, 1);  changed = true; continue; } // Sun → Mon
+    if (day === 1)              { d = addDays(d,-3);  changed = true; continue; } // Mon → Fri
+    if (isHoliday(d))          { d = addDays(d,-1);  changed = true; continue; } // holiday → day before
+  }
+  return d;
+}
+
+// ══════════════════════════════════════════════════════════
+// LISTING LOOKUP
+// ══════════════════════════════════════════════════════════
+
+function findListing(query) {
+  const q = norm(query);
+  if (!q) return null;
+  for (const item of LISTINGS) {
+    // Abbreviations: exact match only (prevents "ramsgate" matching "ms", etc.)
+    if (item.abbrev && norm(item.abbrev) === q) return item;
+    // Street name, community, city: substring match
+    for (const f of [item.street, item.community, item.city].map(norm).filter(Boolean)) {
+      if (f === q || f.includes(q) || q.includes(f)) return item;
+    }
+  }
+  return null;
+}
+
+function resolveAddr(rawAddr) {
+  const m = rawAddr.trim().match(/^(\d+)\s+(.+)$/);
+  if (!m) return {resolved: rawAddr, listing: findListing(rawAddr)};
+  const [,num, street] = m;
+  // Exact abbreviation match first
+  for (const item of LISTINGS) {
+    if (item.abbrev && norm(item.abbrev) === norm(street))
+      return {resolved: `${num} ${item.street}`, listing: item};
+  }
+  const listing = findListing(street);
+  return {resolved: rawAddr, listing};
+}
+
+// ══════════════════════════════════════════════════════════
+// EMAIL PARSER
+// ══════════════════════════════════════════════════════════
+
+function parseEmail(text) {
+  const rows = [];
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    // Format: ADDRESS[, Apt UNIT]- $PRICE, vacating M/D
+    const m = line.match(/^(.+?)\s*-\s*\$([0-9,]+(?:\.\d+)?)\s*,\s*vacating\s+(\d{1,2})\/(\d{1,2})/i);
+    if (!m) continue;
+
+    let addrPart = m[1].trim();
+    const price  = parseFloat(m[2].replace(/,/g,''));
+    const vacate = parseVacateDate(parseInt(m[3]), parseInt(m[4]));
+
+    // Pull out Apt/Unit if present
+    let unit = '';
+    const aptM = addrPart.match(/^(.+?),\s*((?:Apt\.?\s+|Unit\s+|#)\S+|\b[A-Z]\d+|\d+[A-Za-z]*)$/i);
+    if (aptM) { addrPart = aptM[1].trim(); unit = aptM[2].trim(); }
+
+    const {resolved, listing} = resolveAddr(addrPart);
+    const community = listing?.community || '';
+    const city      = listing?.city      || '';
+    const rule      = listing?.rule      || (unit ? 'web' : 'unknown');
+    const avail     = calcAvail(vacate, community);
+    const isComplex = !!(unit) || (listing && listing.community && !listing.sfh);
+
+    rows.push({address:resolved, unit, community, city, price, vacate, avail, rule, listing, isComplex});
+  }
+  return rows;
+}
+
+// ══════════════════════════════════════════════════════════
+// PLATFORM HELPER
+// ══════════════════════════════════════════════════════════
+
+function platforms(rule) {
+  switch(rule) {
+    case 'all':    return {web:true,  z1:true,  z2:false, apts:true };
+    case 'web+z2': return {web:true,  z1:false, z2:true,  apts:false};
+    case 'web+z1': return {web:true,  z1:true,  z2:false, apts:false};
+    case 'web':    return {web:true,  z1:false, z2:false, apts:false};
+    default:       return {web:true,  z1:true,  z2:false, apts:true };
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// WEEKLY GENERATOR
+// ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// LOCAL STORAGE
+// ══════════════════════════════════════════════════════════
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem('wk_data') || '{"weeks":[]}'); }
+  catch(e) { return {weeks:[]}; }
+}
+function saveData(data) { localStorage.setItem('wk_data', JSON.stringify(data)); }
+
+function saveVerify(weekId, idx, checked) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[idx]) return;
+  week.rows[idx].verifiedAt = checked ? new Date().toISOString() : null;
+  saveData(data);
+  buildHomeTab();
+}
+
+function saveNotes(weekId, idx, val) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[idx]) return;
+  week.rows[idx].notes = val;
+  saveData(data);
+}
+
+function saveOffMarket(weekId, idx, checked) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[idx]) return;
+  week.rows[idx].offMarket    = checked;
+  week.rows[idx].offMarketAt  = checked ? new Date().toISOString() : null;
+  // NOTE: Matterport flag is intentionally preserved when going off market
+  // so the red "deactivate" reminder appears on the row.
+  saveData(data);
+  buildHomeTab();
+  // Re-render so Matterport checkbox updates visually
+  flushRowState(week.id);
+  renderWeekSheet(week);
+}
+
+function saveMatterport(weekId, idx, checked) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[idx]) return;
+  week.rows[idx].matterport = checked;
+  saveData(data);
+}
+
+function verifyAllInWeek(weekId) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week) return;
+  const unverified = (week.rows || []).filter(r => !r.verifiedAt && !r.offMarket);
+  if (unverified.length === 0) {
+    alert('All active listings in this sheet are already verified.');
+    return;
+  }
+  if (!confirm(`Mark all ${unverified.length} unverified listing(s) as verified and start their 21-day clock?`)) return;
+  const now = new Date().toISOString();
+  unverified.forEach(r => { r.verifiedAt = now; });
+  saveData(data);
+  buildHomeTab();
+  renderWeekSheet(week);
+}
+
+function toggleRowHighlight(e, tr) {
+  // Don't toggle when clicking inputs, checkboxes, or buttons
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+  tr.classList.toggle('row-highlight');
+}
+
+function saveAddress(weekId, idx, val) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[idx]) return;
+  week.rows[idx].address = val.trim();
+  flushRowState(weekId);
+  saveData(data);
+  renderWeekSheet(week); // re-render so platform rules update to match new address
+}
+
+function saveCity(weekId, idx, val) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[idx]) return;
+  week.rows[idx].city = val;
+  saveData(data);
+}
+
+function saveAvail(weekId, idx, val) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[idx]) return;
+  const trimmed = val.trim();
+  if (!trimmed) {
+    week.rows[idx].avail = null;
+  } else {
+    const parts = trimmed.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/);
+    if (!parts) { alert('Use M/D or M/D/YYYY format (e.g. 6/15 or 6/15/2026).'); return; }
+    const yr = parts[3] ? parseInt(parts[3]) : new Date().getFullYear();
+    week.rows[idx].avail = new Date(yr, parseInt(parts[1])-1, parseInt(parts[2])).toISOString();
+  }
+  flushRowState(weekId);
+  saveData(data);
+  renderWeekSheet(week); // re-render so holiday highlight updates
+}
+
+function loadWeek(weekId) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week) return;
+  // Switch to generator tab
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-generator').classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => { if(b.textContent.trim()==='Weekly Generator') b.classList.add('active'); });
+  // Collapse paste area when loading a saved sheet
+  const body = document.getElementById('new-sheet-body');
+  const btn  = document.querySelector('#new-sheet-card .btn-sm');
+  if (body) { body.style.display = 'none'; if(btn) btn.textContent = '▼ Expand'; }
+  renderWeekSheet(week);
+}
+
+function renameWeek(weekId) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week) return;
+  const newLabel = prompt('Enter a new label for this week:', week.label);
+  if (!newLabel || !newLabel.trim()) return;
+  week.label = newLabel.trim();
+  saveData(data);
+  buildHomeTab();
+}
+
+function deleteWeek(weekId) {
+  if (!confirm('Delete this week\'s sheet? This cannot be undone.')) return;
+  const data = loadData();
+  data.weeks = data.weeks.filter(w => w.id !== weekId);
+  saveData(data);
+  buildHomeTab();
+}
+
+// ══════════════════════════════════════════════════════════
+// HOME TAB
+// ══════════════════════════════════════════════════════════
+
+function daysSince(isoStr) {
+  if (!isoStr) return null;
+  return Math.floor((Date.now() - new Date(isoStr).getTime()) / 86400000);
+}
+
+function buildHomeTab() {
+  const data = loadData();
+  const flagsEl  = document.getElementById('home-flags');
+  const weeksEl  = document.getElementById('home-weeks');
+
+  // ── Flagged listings ──
+  const flagged = [];
+  data.weeks.forEach(week => {
+    (week.rows || []).forEach(row => {
+      if (row.offMarket) return;
+      const liveRule = resolveAddr(row.address).listing?.rule || row.rule;
+      if (!platforms(liveRule).apts) return;
+      // Use aptsPostedAt (Apts.com checkbox) as the clock start; ignore verifiedAt for this
+      if (!row.aptsPostedAt) return;
+      const days = daysSince(row.aptsPostedAt);
+      if (days === null) return;
+      flagged.push({...row, days, weekId: week.id, weekLabel: week.label});
+    });
+  });
+
+  if (flagged.length === 0) {
+    flagsEl.innerHTML = '<p class="empty-state">No active Apts.com listings to track right now.</p>';
+  } else {
+    flagged.sort((a,b) => b.days - a.days);
+    flagsEl.innerHTML = flagged.map(f => {
+      const cls = f.days >= 21 ? 'flag' : f.days >= 18 ? 'warn' : 'ok';
+      const badge = f.days >= 21
+        ? `<span class="days-badge flag">🚨 ${f.days} days — Apts.com expired</span>`
+        : f.days >= 18
+        ? `<span class="days-badge warn">⚠️ ${f.days} days — expiring soon</span>`
+        : `<span class="days-badge ok">${f.days} days</span>`;
+      const addr  = f.unit ? `${f.address}, ${f.unit}` : f.address;
+      const meta  = [f.community, f.city].filter(Boolean).join(' · ');
+      return `<div class="flag-row ${cls}">
+        <div>
+          <div class="flag-row-addr">${addr}</div>
+          <div class="flag-row-meta">${meta || ''}${meta && f.weekLabel ? ' &nbsp;·&nbsp; ' : ''}${f.weekLabel || ''}</div>
+        </div>
+        ${badge}
+        <button class="btn-sm" onclick="loadWeek('${f.weekId}')">View Sheet</button>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Saved weeks ──
+  if (!data.weeks.length) {
+    weeksEl.innerHTML = '<p class="empty-state">No saved sheets yet. Generate a weekly sheet to get started.</p>';
+  } else {
+    weeksEl.innerHTML = data.weeks.map(week => {
+      const total    = (week.rows || []).length;
+      const verified = (week.rows || []).filter(r => r.verifiedAt).length;
+      const genDate  = week.generated ? new Date(week.generated).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+      return `<div class="week-card">
+        <div class="week-card-left">
+          <span class="week-card-label">${week.label}</span>
+          <span class="week-card-meta">Generated ${genDate} &nbsp;·&nbsp; ${total} listings &nbsp;·&nbsp; ${verified} verified</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-sm" onclick="loadWeek('${week.id}')">📋 Open</button>
+          <button class="btn-sm" onclick="renameWeek('${week.id}')">✏️</button>
+          <button class="btn-sm" onclick="deleteWeek('${week.id}')" style="color:#c53030;">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function toggleNewSheet() {
+  const body = document.getElementById('new-sheet-body');
+  const btn  = document.querySelector('#new-sheet-card .btn-sm');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  btn.textContent = open ? '▼ Expand' : '▲ Collapse';
+}
+
+function generateSheetSafe() {
+  const genOut  = document.getElementById('gen-output');
+  const hasSheet = genOut.innerHTML.trim() !== '';
+  if (hasSheet) {
+    const existingId = genOut.getAttribute('data-week-id') || null;
+    const msg = existingId
+      ? 'This will refresh the current sheet with the latest email data.\n\nCheckboxes and notes you\'ve already saved will be kept.\n\nContinue?'
+      : 'This will generate a new sheet and replace the one currently shown.\n\nMake sure you\'ve saved your progress first.\n\nContinue?';
+    if (!confirm(msg)) return;
+    generateSheet(existingId || undefined);
+  } else {
+    generateSheet();
+  }
+}
+
+function generateSheet(existingWeekId) {
+  const text = document.getElementById('emailInput').value.trim();
+  if (!text) return;
+  const items = parseEmail(text);
+  if (!items.length) {
+    document.getElementById('gen-output').innerHTML =
+      `<div class="card" style="color:#c53030">⚠️ No listings could be parsed. Check the format and try again.</div>`;
+    return;
+  }
+
+  // Save to localStorage
+  const data   = loadData();
+  const id       = existingWeekId || ('wk_' + Date.now());
+  const today    = new Date();
+  const customLabel = document.getElementById('weekLabel')?.value.trim();
+  const label    = customLabel || ('Week of ' + today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}));
+  const existingIdx = data.weeks.findIndex(w => w.id === id);
+  const existingRows = existingIdx >= 0 ? data.weeks[existingIdx].rows : [];
+
+  const weekData = {
+    id,
+    label,
+    generated: today.toISOString(),
+    rows: items.map((item, idx) => {
+      const saved = existingRows[idx] || {};
+      return {
+        idx,
+        address:    item.address,
+        unit:       item.unit       || '',
+        community:  item.community  || '',
+        city:       saved.city      || item.city || '',
+        price:      item.price,
+        vacate:     item.vacate  ? item.vacate.toISOString()  : null,
+        avail:      item.avail   ? item.avail.toISOString()   : null,
+        rule:       item.rule,
+        verifiedAt: saved.verifiedAt || null,
+        notes:      saved.notes      || '',
+      };
+    }),
+  };
+
+  if (existingIdx >= 0) data.weeks[existingIdx] = weekData;
+  else data.weeks.unshift(weekData);
+  saveData(data);
+  buildHomeTab();
+
+  const todayFmt = today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  // Collapse the paste area once sheet is generated
+  const body = document.getElementById('new-sheet-body');
+  const btn  = document.querySelector('#new-sheet-card .btn-sm');
+  if (body) { body.style.display = 'none'; if(btn) btn.textContent = '▼ Expand'; }
+
+  renderWeekSheet(weekData);
+}
+
+function renderWeekSheet(week) {
+  const pFmt2 = n => n ? `$${n.toFixed(2)}` : '';
+
+  let html = `<div class="card">
+    <div class="gen-header">
+      <h2>📋 ${week.label}</h2>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm" onclick="window.print()">🖨 Print</button>
+        <button class="btn-sm" onclick="verifyAllInWeek('${week.id}')" title="Mark all unverified listings as verified and start their 21-day clock">✓ Verify All</button>
+        <button class="btn-sm" id="save-btn-${week.id}" style="background:#c6f6d5;color:#276749;border-color:#68d391;font-weight:700;" onclick="saveSheetProgress('${week.id}', this)">💾 Save Progress</button>
+      </div>
+    </div>
+    <div class="key">
+      <span class="key-item"><span class="badge all">■</span> All platforms</span>
+      <span class="key-item"><span class="badge z2">■</span> Website + Zillow 2</span>
+      <span class="key-item"><span class="badge web">■</span> Website only</span>
+      <span class="key-item"><span class="badge unk">■</span> Unconfirmed</span>
+      <span class="key-item" style="margin-left:auto;color:#718096;font-size:.74rem;">✏️ Check ✓ when fully posted — starts 21-day Apts.com clock</span>
+    </div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr>
+        <th class="center" style="white-space:nowrap;background:#fed7d7;color:#c53030;">Off Market</th>
+        <th title="Verified — posted on all platforms" class="center" style="width:26px;background:#c6f6d5;color:#276749;">✓</th>
+        <th>Address</th>
+        <th style="min-width:95px;">City</th>
+        <th>Apt/Unit</th>
+        <th style="min-width:120px;">Community</th>
+        <th>Price</th>
+        <th style="white-space:nowrap;">Vacating</th>
+        <th style="white-space:nowrap;">Available</th>
+        <th class="center">WK Site</th>
+        <th class="center">Zillow</th>
+        <th class="center">Zillow 2</th>
+        <th class="center">Apts.com</th>
+        <th class="center">Matterport</th>
+        <th style="min-width:110px;">Notes</th>
+        <th style="width:30px;"></th>
+      </tr></thead>
+      <tbody>`;
+
+  week.rows.forEach(row => { html += renderRow(row, week.id); });
+
+  html += `</tbody></table></div></div>`;
+
+  // ── Spreadsheet copy block ──
+  const headers = ['Address','Unit','Community','City','Price','Vacating','Available','WK Site','Zillow','Zillow 2','Apts.com'];
+  const tsv = [headers.join('\t'), ...week.rows.map(row => {
+    const p  = platforms(row.rule);
+    const yn = v => v === null ? '?' : (v ? 'Yes' : 'No');
+    return [
+      row.address, row.unit || '', row.community || '', row.city || '',
+      pFmt2(row.price),
+      row.vacate ? fmtDate(new Date(row.vacate)) : '',
+      row.avail  ? fmtDate(new Date(row.avail))  : '',
+      yn(p.web), yn(p.z1), yn(p.z2), yn(p.apts),
+    ].join('\t');
+  })].join('\n');
+
+  html += `<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <label style="margin:0;">📋 Copy for Spreadsheet</label>
+      <button class="btn-sm" onclick="copyTsv(this)">Copy to Clipboard</button>
+    </div>
+    <p class="hint" style="margin-bottom:8px;">Paste directly into Excel or Google Sheets.</p>
+    <textarea id="tsv-output" rows="8" onclick="this.select()" style="font-family:'Courier New',monospace;font-size:.75rem;background:#f7fafc;color:#2d3748;">${tsv}</textarea>
+  </div>
+
+  <div class="card">
+    <label>➕ Add a Listing</label>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:10px;margin-bottom:6px;">
+      <div>
+        <label style="font-size:.78rem;font-weight:600;color:#718096;margin-bottom:4px;">Address</label>
+        <input type="text" id="add-address" placeholder="e.g. 123 Oak Street">
+      </div>
+      <div>
+        <label style="font-size:.78rem;font-weight:600;color:#718096;margin-bottom:4px;">Unit</label>
+        <input type="text" id="add-unit" placeholder="e.g. Apt 3B">
+      </div>
+      <div>
+        <label style="font-size:.78rem;font-weight:600;color:#718096;margin-bottom:4px;">Community</label>
+        <input type="text" id="add-community" placeholder="e.g. Holly Tree">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:.78rem;font-weight:600;color:#718096;margin-bottom:4px;">City</label>
+        <input type="text" id="add-city" placeholder="e.g. Lancaster">
+      </div>
+      <div>
+        <label style="font-size:.78rem;font-weight:600;color:#718096;margin-bottom:4px;">Price</label>
+        <input type="text" id="add-price" placeholder="e.g. 1500">
+      </div>
+      <div>
+        <label style="font-size:.78rem;font-weight:600;color:#718096;margin-bottom:4px;">Date (M/D)</label>
+        <input type="text" id="add-date" placeholder="e.g. 6/15">
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;gap:16px;">
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:.88rem;cursor:pointer;">
+          <input type="radio" name="add-date-type-${week.id}" value="vacate" checked> Vacating date
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:.88rem;cursor:pointer;">
+          <input type="radio" name="add-date-type-${week.id}" value="available"> Available date
+        </label>
+      </div>
+      <button class="btn btn-primary" style="width:auto;margin:0;white-space:nowrap;"
+        onclick="addListingToWeek('${week.id}')">➕ Add Listing</button>
+    </div>
+    <div id="add-listing-msg" style="margin-top:8px;font-size:.82rem;"></div>
+  </div>`;
+
+  const genOut = document.getElementById('gen-output');
+  genOut.innerHTML = html;
+  genOut.setAttribute('data-week-id', week.id);
+}
+
+// ══════════════════════════════════════════════════════════
+// OFF MARKET TAB
+// ══════════════════════════════════════════════════════════
+
+function searchOffMarket() {
+  const q   = norm(document.getElementById('om-search').value.trim());
+  const out = document.getElementById('om-results');
+  if (!q) { out.innerHTML = ''; return; }
+
+  const data    = loadData();
+  const matches = [];
+
+  data.weeks.forEach(week => {
+    (week.rows || []).forEach(row => {
+      const fields = [row.address, row.unit, row.community, row.city].map(norm).filter(Boolean);
+      const hit    = fields.some(f => f.includes(q) || q.includes(f));
+      if (hit) matches.push({week, row});
+    });
+  });
+
+  if (!matches.length) {
+    out.innerHTML = '<p class="empty-state">No listings found matching that address.</p>';
+    return;
+  }
+
+  out.innerHTML = matches.map(({week, row}) => {
+    const addr     = row.unit ? `${row.address}, ${row.unit}` : row.address;
+    const meta     = [row.community, row.city, week.label].filter(Boolean).join(' · ');
+    const isOff    = !!row.offMarket;
+    const days     = row.verifiedAt && !isOff ? daysSince(row.verifiedAt) : null;
+    const daysTxt  = days !== null ? ` &nbsp;·&nbsp; <span class="days-badge ${days>=21?'flag':days>=18?'warn':'ok'}" style="font-size:.72rem;">${days}d active</span>` : '';
+    const offTxt   = isOff ? ' &nbsp;·&nbsp; <span style="color:#c53030;font-weight:700;">Off Market</span>' : '';
+    return `<div class="om-result ${isOff?'done':''}" id="omr-${week.id}-${row.idx}">
+      <div style="flex:1;min-width:0;">
+        <div class="om-result-addr">${addr}</div>
+        <div class="om-result-meta">${meta}${daysTxt}${offTxt}</div>
+      </div>
+      ${isOff
+        ? `<button class="om-btn undo" onclick="toggleOffMarketFromTab('${week.id}',${row.idx},false)">↺ Undo</button>`
+        : `<button class="om-btn mark" onclick="toggleOffMarketFromTab('${week.id}',${row.idx},true)">Mark Off Market</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function toggleOffMarketFromTab(weekId, idx, setOff) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[idx]) return;
+  week.rows[idx].offMarket   = setOff;
+  week.rows[idx].offMarketAt = setOff ? new Date().toISOString() : null;
+  // NOTE: Matterport flag preserved so red "deactivate" reminder shows.
+  saveData(data);
+  buildHomeTab();
+  // Re-run search to refresh results
+  searchOffMarket();
+}
+
+// Silently flush all current DOM checkbox/input state for a week to localStorage.
+// Call this before any renderWeekSheet() so unsaved ticks are never lost.
+function flushRowState(weekId) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week) return;
+  document.querySelectorAll(`tr[data-week="${weekId}"]`).forEach(tr => {
+    const idx = parseInt(tr.getAttribute('data-idx'));
+    if (isNaN(idx) || !week.rows[idx]) return;
+    if (tr.querySelector('.cb-wk'))         week.rows[idx].cbWk       = tr.querySelector('.cb-wk').checked;
+    if (tr.querySelector('.cb-z1'))         week.rows[idx].cbZ1       = tr.querySelector('.cb-z1').checked;
+    if (tr.querySelector('.cb-z2'))         week.rows[idx].cbZ2       = tr.querySelector('.cb-z2').checked;
+    if (tr.querySelector('.cb-matterport')) week.rows[idx].matterport = tr.querySelector('.cb-matterport').checked;
+    const verifyEl = tr.querySelector('.cb-verify');
+    if (verifyEl) {
+      if (verifyEl.checked && !week.rows[idx].verifiedAt) week.rows[idx].verifiedAt = new Date().toISOString();
+      else if (!verifyEl.checked) week.rows[idx].verifiedAt = null;
+    }
+    const aptsEl = tr.querySelector('.cb-apts');
+    if (aptsEl) {
+      week.rows[idx].cbApts = aptsEl.checked;
+      if (aptsEl.checked && !week.rows[idx].aptsPostedAt) week.rows[idx].aptsPostedAt = new Date().toISOString();
+      else if (!aptsEl.checked) week.rows[idx].aptsPostedAt = null;
+    }
+  });
+  saveData(data);
+}
+
+function saveSheetProgress(weekId, btn) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week) return;
+
+  // Read all row checkboxes from the DOM
+  document.querySelectorAll(`tr[data-week="${weekId}"]`).forEach(tr => {
+    const idx = parseInt(tr.getAttribute('data-idx'));
+    if (isNaN(idx) || !week.rows[idx]) return;
+    const get = cls => { const el = tr.querySelector(`.${cls}`); return el ? el.checked : week.rows[idx][cls.replace('cb-','').replace('wk','web').replace('z1','z1').replace('z2','z2').replace('apts','apts').replace('matterport','matterport')] || false; };
+    week.rows[idx].cbWk         = tr.querySelector('.cb-wk')         ? tr.querySelector('.cb-wk').checked         : null;
+    week.rows[idx].cbZ1         = tr.querySelector('.cb-z1')         ? tr.querySelector('.cb-z1').checked         : null;
+    week.rows[idx].cbZ2         = tr.querySelector('.cb-z2')         ? tr.querySelector('.cb-z2').checked         : null;
+    const aptsEl = tr.querySelector('.cb-apts');
+    if (aptsEl) {
+      week.rows[idx].cbApts = aptsEl.checked;
+      if (aptsEl.checked && !week.rows[idx].aptsPostedAt) {
+        week.rows[idx].aptsPostedAt = new Date().toISOString();
+      } else if (!aptsEl.checked) {
+        week.rows[idx].aptsPostedAt = null;
+      }
+    }
+    week.rows[idx].matterport   = tr.querySelector('.cb-matterport') ? tr.querySelector('.cb-matterport').checked : week.rows[idx].matterport;
+    // Verify checkbox — set timestamp on first check, clear if unchecked
+    const verifyEl = tr.querySelector('.cb-verify');
+    if (verifyEl) {
+      if (verifyEl.checked && !week.rows[idx].verifiedAt) {
+        week.rows[idx].verifiedAt = new Date().toISOString();
+      } else if (!verifyEl.checked) {
+        week.rows[idx].verifiedAt = null;
+      }
+    }
+  });
+
+  saveData(data);
+  buildHomeTab();
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✅ Saved!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  }
+}
+
+function deleteListingRow(weekId, idx) {
+  if (!confirm('Delete this listing? This cannot be undone.')) return;
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week) return;
+  week.rows.splice(idx, 1);
+  // Re-index
+  week.rows.forEach((r, i) => r.idx = i);
+  saveData(data);
+  buildHomeTab();
+  renderWeekSheet(week);
+}
+
+function addListingToWeek(weekId) {
+  const msg      = document.getElementById('add-listing-msg');
+  const address   = document.getElementById('add-address').value.trim();
+  const unit      = document.getElementById('add-unit').value.trim();
+  const manualComm= document.getElementById('add-community').value.trim();
+  const city      = document.getElementById('add-city').value.trim();
+  const priceRaw  = document.getElementById('add-price').value.trim();
+  const dateRaw   = document.getElementById('add-date').value.trim();
+  const radios   = document.querySelectorAll(`input[name="add-date-type-${weekId}"]`);
+  const dateType = [...radios].find(r => r.checked)?.value || 'vacate';
+
+  if (!address || !dateRaw) {
+    msg.innerHTML = '<span style="color:#c53030;">⚠️ Address and date are required.</span>';
+    return;
+  }
+
+  // Parse date (M/D)
+  const dateParts = dateRaw.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!dateParts) {
+    msg.innerHTML = '<span style="color:#c53030;">⚠️ Date format should be M/D, e.g. 6/15.</span>';
+    return;
+  }
+  const enteredDate = parseVacateDate(parseInt(dateParts[1]), parseInt(dateParts[2]));
+  const price       = parseFloat(priceRaw.replace(/[$,]/g,'')) || 0;
+
+  // Look up listing info by address
+  const {listing}    = resolveAddr(address);
+  const community    = manualComm || listing?.community || '';
+  const resolvedCity = city || listing?.city || '';
+  const rule         = listing?.rule || 'unknown';
+
+  let vacateISO, availISO;
+  if (dateType === 'vacate') {
+    vacateISO = enteredDate.toISOString();
+    availISO  = calcAvail(enteredDate, community).toISOString();
+  } else {
+    vacateISO = null;
+    availISO  = enteredDate.toISOString();
+  }
+
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week) return;
+
+  week.rows.push({
+    idx:        week.rows.length,
+    address,
+    unit,
+    community,
+    city:       resolvedCity,
+    price,
+    vacate:     vacateISO,
+    avail:      availISO,
+    rule,
+    verifiedAt: null,
+    notes:      '',
+  });
+
+  saveData(data);
+  buildHomeTab();
+
+  // Clear fields
+  ['add-address','add-unit','add-community','add-city','add-price','add-date'].forEach(id => document.getElementById(id).value = '');
+  msg.innerHTML = '<span style="color:#276749;">✅ Added! Re-rendering sheet…</span>';
+  setTimeout(() => { renderWeekSheet(week); }, 600);
+}
+
+function copyTsv(btn) {
+  const ta = document.getElementById('tsv-output');
+  ta.select();
+  try {
+    navigator.clipboard.writeText(ta.value).then(() => {
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
+    });
+  } catch(e) {
+    document.execCommand('copy');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
+  }
+}
+
+function renderRow(row, weekId) {
+  // Always look up the current rule from LISTINGS so database changes apply immediately
+  const liveRule = resolveAddr(row.address).listing?.rule || row.rule;
+  const p      = platforms(liveRule);
+  const pFmt   = n => n.toLocaleString('en-US',{style:'currency',currency:'USD'});
+  const availDate  = row.avail  ? new Date(row.avail)  : null;
+  const vacateDate = row.vacate ? new Date(row.vacate) : null;
+  const availClass = (availDate && isHoliday(availDate)) ? 'avail holiday' : 'avail';
+  const cityVal    = row.city || '';
+  const cityPH     = row.city ? '' : 'Look up in Buildium';
+  const verified   = !!row.verifiedAt;
+  const offMarket  = !!row.offMarket;
+  const rowStyle   = offMarket ? 'opacity:.4;text-decoration:line-through;' : verified ? 'opacity:.65;' : '';
+
+  // Days badge
+  let daysBadge = '';
+  if (offMarket && row.verifiedAt && row.offMarketAt) {
+    const days = Math.floor((new Date(row.offMarketAt) - new Date(row.verifiedAt)) / 86400000);
+    daysBadge  = ` <span class="days-badge ok" style="font-size:.65rem;">🏠 ${days}d on market</span>`;
+  } else if (verified && !offMarket) {
+    const days = daysSince(row.verifiedAt);
+    const cls  = days >= 21 ? 'flag' : days >= 18 ? 'warn' : 'ok';
+    daysBadge  = ` <span class="days-badge ${cls}" style="font-size:.65rem;">${days}d</span>`;
+  }
+
+  // Turn-time badge (2wk or 3wk)
+  const turnW = resolveAddr(row.address).listing?.turnWeeks;
+  const turnBadge = (turnW === 2 || turnW === 3)
+    ? ` <span style="display:inline-block;font-size:.62rem;font-weight:700;padding:1px 5px;border-radius:8px;background:#fef3c7;color:#92400e;white-space:nowrap;" title="${turnW}-week vacancy-to-availability turn time">${turnW}wk turn</span>`
+    : '';
+
+  return `<tr class="data-row" data-week="${weekId}" data-idx="${row.idx}" style="${rowStyle}" onclick="toggleRowHighlight(event,this)">
+    <td class="center" style="background:${offMarket?'#fff5f5':''}"><input type="checkbox" title="Off market — rented"
+      ${offMarket ? 'checked' : ''}
+      onchange="saveOffMarket('${weekId}',${row.idx},this.checked);this.closest('tr').style.opacity=this.checked?'.4':'';this.closest('tr').style.textDecoration=this.checked?'line-through':'';"></td>
+    <td class="center" style="background:${verified?'#f0fff4':''}"><input type="checkbox" class="cb-verify" title="Verified — posted on all platforms"
+      ${verified ? 'checked' : ''}
+      onchange="saveVerify('${weekId}',${row.idx},this.checked);this.closest('tr').style.opacity=this.checked?'.65':'1';"></td>
+    <td class="addr"><input type="text" value="${row.address.replace(/"/g,'&quot;')}" style="font-weight:600;min-width:140px;"
+      onblur="saveAddress('${weekId}',${row.idx},this.value)">${daysBadge}${turnBadge}</td>
+    <td><input type="text" value="${cityVal}" placeholder="${cityPH}"
+      onblur="saveCity('${weekId}',${row.idx},this.value)"></td>
+    <td>${row.unit||''}</td>
+    <td>${row.community||'<span style="color:#a0aec0;font-style:italic">—</span>'}</td>
+    <td class="price">${row.price ? pFmt(row.price) : ''}</td>
+    <td>${vacateDate ? fmtDate(vacateDate) : ''}</td>
+    <td class="${availClass}"><input type="text" value="${availDate ? fmtDate(availDate) : ''}" placeholder="M/D/YYYY"
+      style="font-weight:700;color:inherit;min-width:80px;background:transparent;"
+      onblur="saveAvail('${weekId}',${row.idx},this.value)"></td>
+    ${cbCellSaved(p.web,  'cb-wk',   row.cbWk)}
+    ${cbCellSaved(p.z1,   'cb-z1',   row.cbZ1)}
+    ${cbCellSaved(p.z2,   'cb-z2',   row.cbZ2)}
+    ${cbCellApts(p.apts, row, weekId)}
+    <td class="center" style="${offMarket && row.matterport ? 'background:#fff0f0;outline:2px solid #fc8181;outline-offset:-2px;' : ''}"
+      title="${offMarket && row.matterport ? '⚠ Matterport still active — uncheck once deactivated' : 'Matterport'}">
+      ${offMarket && row.matterport
+        ? `<span style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+             <input type="checkbox" class="cb-matterport" checked style="accent-color:#e53e3e;"
+               onchange="saveMatterport('${weekId}',${row.idx},this.checked);renderWeekSheet(loadData().weeks.find(w=>w.id==='${weekId}'))">
+             <span style="font-size:.55rem;color:#c53030;font-weight:700;line-height:1;">DEACTIVATE</span>
+           </span>`
+        : `<input type="checkbox" class="cb-matterport" ${row.matterport ? 'checked' : ''} ${offMarket ? 'disabled' : ''}
+             onchange="saveMatterport('${weekId}',${row.idx},this.checked)">`
+      }
+    </td>
+    <td><input type="text" value="${(row.notes||'').replace(/"/g,'&quot;')}" placeholder="Notes…"
+      onblur="saveNotes('${weekId}',${row.idx},this.value)"></td>
+    <td class="center"><button onclick="deleteListingRow('${weekId}',${row.idx})" title="Delete row"
+      style="background:none;border:none;cursor:pointer;color:#cbd5e0;font-size:1rem;padding:2px 4px;line-height:1;"
+      onmouseover="this.style.color='#c53030'" onmouseout="this.style.color='#cbd5e0'">✕</button></td>
+  </tr>`;
+}
+
+function cbCellApts(v, row, weekId) {
+  if (!v) return `<td class="na">—</td>`;
+  const posted = row.aptsPostedAt ? new Date(row.aptsPostedAt) : null;
+  const daysLeft = posted ? Math.ceil((addDays(posted, 21) - new Date()) / 86400000) : null;
+  const bg = posted ? (daysLeft <= 3 ? 'background:#fff5f5;' : daysLeft <= 7 ? 'background:#fffbeb;' : 'background:#f0fff4;') : '';
+  const label = posted && daysLeft !== null
+    ? `<div style="font-size:.6rem;color:${daysLeft<=3?'#c53030':daysLeft<=7?'#c05621':'#276749'};font-weight:700;line-height:1.3;">${daysLeft<=0?'exp':daysLeft+'d'}</div>` : '';
+  return `<td class="center" style="${bg}">
+    <input type="checkbox" class="cb-apts" ${row.cbApts ? 'checked' : ''}
+      onchange="saveAptsCb('${weekId}',${row.idx},this.checked)">
+    ${label}
+  </td>`;
+}
+
+function saveAptsCb(weekId, rowIdx, checked) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[rowIdx]) return;
+  week.rows[rowIdx].cbApts = checked;
+  week.rows[rowIdx].aptsPostedAt = checked
+    ? (week.rows[rowIdx].aptsPostedAt || new Date().toISOString())
+    : null;
+  flushRowState(weekId);
+  saveData(data);
+  buildHomeTab();
+  buildAptsTab();
+  // Refresh the cell to show days countdown
+  renderWeekSheet(week);
+}
+
+function cbCell(v, cls='') {
+  if (v === null) return `<td class="center" title="Platform unconfirmed">❓</td>`;
+  if (!v)        return `<td class="na ${cls}">—</td>`;
+  return         `<td class="center"><input type="checkbox" class="${cls}"></td>`;
+}
+
+function cbCellSaved(v, cls, saved) {
+  if (v === null) return `<td class="center" title="Platform unconfirmed">❓</td>`;
+  if (!v)        return `<td class="na">—</td>`;
+  const checked  = saved ? 'checked' : '';
+  return         `<td class="center"><input type="checkbox" class="${cls}" ${checked}></td>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// PLATFORM CHECKER
+// ══════════════════════════════════════════════════════════
+
+function checkPlatform() {
+  const query = document.getElementById('q').value.trim();
+  const out   = document.getElementById('checker-result');
+  if (!query) { out.innerHTML=''; return; }
+
+  const noteClass = {all:'success','web+z2':'warning','web+z1':'warning',web:'info',unknown:'unknown'};
+  const noteIcon  = {all:'✅','web+z2':'🏢','web+z1':'🏢',web:'🌐',unknown:'⚠️'};
+
+  const match = findListing(query);
+
+  if (match) {
+    const p   = platforms(match.rule);
+    const tag = [match.community, match.city].filter(Boolean).join(' — ');
+    out.innerHTML = `
+      <h3 style="font-size:.93rem;color:#4a5568;margin-bottom:5px;">Results for: <strong>${query}</strong></h3>
+      <p class="matched-as">Matched: <strong>${match.street}</strong>${match.abbrev?' ('+match.abbrev+')':''} ${tag?'| Community: <strong>'+tag+'</strong>':''}</p>
+      <div class="platforms-grid">
+        ${pCard('WK Website', p.web)}${pCard('Zillow', p.z1)}
+        ${pCard('Zillow 2',  p.z2)} ${pCard('Apts.com', p.apts)}
+      </div>
+      <div class="note-box ${noteClass[match.rule]||'unknown'}">${noteIcon[match.rule]||'⚠️'} ${match.note||'Rule: '+match.rule}</div>`;
+    return;
+  }
+
+  if (/\b(apt|unit|ste|suite|#)\b/i.test(query)) {
+    out.innerHTML = `
+      <p class="matched-as">Detected apt/unit designation — treating as complex unit.</p>
+      <div class="platforms-grid">${pCard('WK Website',true)}${pCard('Zillow',false)}${pCard('Zillow 2',false)}${pCard('Apts.com',false)}</div>
+      <div class="note-box info">📋 WK Website only. Search the community name to check for a Zillow 2 account.</div>`;
+    return;
+  }
+
+  out.innerHTML = `
+    <p class="matched-as">Not found in community list — assuming standalone property.</p>
+    <div class="platforms-grid">${pCard('WK Website',true)}${pCard('Zillow',true)}${pCard('Zillow 2',false)}${pCard('Apts.com',true)}</div>
+    <div class="note-box info">📋 Standalone address — post to WK Website, Zillow, and Apts.com. Double-check if unsure.</div>`;
+}
+
+function pCard(name, v) {
+  if (v===null) return `<div class="p-card unk">❓ <span>${name} — Unconfirmed</span></div>`;
+  return `<div class="p-card ${v?'yes':'no'}">${v?'✅':'❌'} <span>${name}</span></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// REFERENCE TABLE
+// ══════════════════════════════════════════════════════════
+
+function buildRefTable() {
+  const bm = {all:'<span class="badge all">Website+Zillow+Apts</span>',
+              'web+z2':'<span class="badge z2">Website+Zillow 2</span>',
+              'web+z1':'<span class="badge z2">Website+Zillow</span>',
+              web:'<span class="badge web">Website Only</span>',
+              unknown:'<span class="badge unk">Unconfirmed</span>'};
+  document.getElementById('refBody').innerHTML = LISTINGS.map(l=>`
+    <tr>
+      <td>${l.street}</td><td>${l.abbrev||'—'}</td>
+      <td>${l.community||'—'}</td><td>${l.city}</td>
+      <td>${bm[l.rule]||bm.unknown}</td>
+    </tr>`).join('');
+}
+
+function toggleRef(btn) {
+  const w = document.getElementById('refTable');
+  const open = w.style.display==='block';
+  w.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '📋 View Full Community Reference Table ▾' : '📋 Hide Reference Table ▴';
+}
+
+// ══════════════════════════════════════════════════════════
+// TAB NAV
+// ══════════════════════════════════════════════════════════
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// FRIDAY COMMUNITY CHECK
+// ══════════════════════════════════════════════════════════
+
+const FRIDAY_COMMUNITIES = [
+  {community:"419",                     city:"Lebanon",        rule:"web+z2"},
+  {community:"Briar Ridge Commons",     city:"Lebanon",        rule:"web+z2"},
+  {community:"Charleston",              city:"Lancaster",      rule:"all"},
+  {community:"Covered Bridge Estates",  city:"Ephrata",        rule:"all"},
+  {community:"Creek Corner",            city:"Ephrata",        rule:"web"},
+  {community:"Hay Road Apartments",     city:"Temple",         rule:"web"},
+  {community:"Holly Tree",              city:"Manheim",        rule:"web+z2"},
+  {community:"Kissel Hill Commons",     city:"Lititz",         rule:"web"},
+  {community:"Kissel Hill Crest",       city:"Lititz",         rule:"unknown"},
+  {community:"Market Square",           city:"Leola",          rule:"web+z2"},
+  {community:"Meadow Creek",            city:"Ephrata",        rule:"web"},
+  {community:"Paradise Meadow",         city:"Gordonville",    rule:"web+z1"},
+  {community:"Park West",               city:"Mechanicsburg",  rule:"web+z2"},
+  {community:"Red Mill",                city:"Etters",         rule:"web+z2"},
+  {community:"Shady Oak",               city:"Mt. Joy",        rule:"all"},
+  {community:"Stone Gate",              city:"Stevens",        rule:"all"},
+  {community:"Stone Hill",              city:"Annville",       rule:"all"},
+  {community:"Summit Living",           city:"Lancaster",      rule:"unknown"},
+  {community:"Sycamore Acres",          city:"Ephrata",        rule:"unknown"},
+  {community:"Timber Ridge",            city:"Etown",          rule:"unknown"},
+  {community:"Town's Edge",              city:"Lebanon",        rule:"web"},
+  {community:"Trailside",               city:"Akron",          rule:"all"},
+  {community:"Union Summit",            city:"Harrisburg",     rule:"web+z2"},
+  {community:"Willow Creek",            city:"Ephrata",        rule:"web"},
+  {community:"Willow Run",              city:"Willow Street",  rule:"unknown"},
+];
+
+function buildFridayList() {
+  const today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  let html = `<p style="font-size:.78rem;color:#a0aec0;margin-bottom:12px;">Week of ${today}</p>`;
+
+  FRIDAY_COMMUNITIES.forEach((item, i) => {
+    html += `<div class="fri-row" id="fri-row-${i}">
+      <span class="comm">${item.community}</span>
+      <span class="city">${item.city}</span>
+      <span class="cb-cell" style="width:90px;"><input type="checkbox" id="fri-count-${i}" onchange="updateFriRow(${i})" title="Has active listings"></span>
+      <span class="cb-cell"><input type="checkbox" id="fri-no-${i}"   onchange="updateFriRow(${i})" title="No active listings"></span>
+      <span class="cb-cell"><input type="checkbox" id="fri-disp-${i}" onchange="updateFriRow(${i})" title="Displayed on site"></span>
+      <span class="cb-cell"><input type="checkbox" id="fri-map-${i}" title="Working map"></span>
+      <span class="notes-cell"><input type="text" id="fri-note-${i}" placeholder="Notes…"></span>
+    </div>`;
+  });
+
+  document.getElementById('friday-list').innerHTML = html;
+}
+
+function updateFriRow(i) {
+  const hasListings = document.getElementById(`fri-count-${i}`).checked;
+  const noListings  = document.getElementById(`fri-no-${i}`).checked;
+  const displayed   = document.getElementById(`fri-disp-${i}`).checked;
+  const row = document.getElementById(`fri-row-${i}`);
+  const flagged = hasListings && !displayed && !noListings;
+  row.classList.toggle('flagged', flagged);
+  const comm = row.querySelector('.comm');
+  const badge = comm.querySelector('.flag-badge');
+  if (flagged && !badge) comm.insertAdjacentHTML('beforeend','<span class="flag-badge">⚠ Check</span>');
+  else if (!flagged && badge) badge.remove();
+}
+
+function resetFridayCheck() {
+  FRIDAY_COMMUNITIES.forEach((_,i) => {
+    document.getElementById(`fri-count-${i}`).checked = false;
+    document.getElementById(`fri-no-${i}`).checked   = false;
+    document.getElementById(`fri-disp-${i}`).checked = false;
+    document.getElementById(`fri-map-${i}`).checked  = false;
+    document.getElementById(`fri-note-${i}`).value   = '';
+    updateFriRow(i);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// APTS.COM TAB
+// ══════════════════════════════════════════════════════════
+
+function getStandaloneApts() {
+  try { return JSON.parse(localStorage.getItem('apts_standalone') || '[]'); }
+  catch(e) { return []; }
+}
+function saveStandaloneApts(arr) { localStorage.setItem('apts_standalone', JSON.stringify(arr)); }
+
+function getAptsActive() {
+  const data = loadData();
+  const active = [];
+  data.weeks.forEach(week => {
+    (week.rows || []).forEach(row => {
+      if (!row.aptsPostedAt || row.offMarket) return;
+      const liveRule = resolveAddr(row.address).listing?.rule || row.rule;
+      if (!platforms(liveRule).apts) return;
+      const postedDate = new Date(row.aptsPostedAt);
+      const expireDate = addDays(postedDate, 21);
+      const daysLeft = Math.ceil((expireDate - new Date()) / 86400000);
+      active.push({ address:row.address, unit:row.unit||'', community:row.community||'',
+        city:row.city||'', postedAt:row.aptsPostedAt, expireDate, daysLeft,
+        weekId:week.id, rowIdx:row.idx, source:'week' });
+    });
+  });
+  getStandaloneApts().forEach((entry, idx) => {
+    if (entry.removed) return;
+    const postedDate = new Date(entry.postedAt);
+    const expireDate = addDays(postedDate, 21);
+    const daysLeft = Math.ceil((expireDate - new Date()) / 86400000);
+    active.push({ address:entry.address, unit:entry.unit||'', community:entry.community||'',
+      city:entry.city||'', postedAt:entry.postedAt, expireDate, daysLeft, idx, source:'standalone' });
+  });
+  return active;
+}
+
+function buildAptsTab() {
+  const active  = getAptsActive();
+  const count   = active.length;
+  const sorted  = [...active].sort((a,b) => a.daysLeft - b.daysLeft);
+  const capColor  = count >= 48 ? '#c53030' : count >= 45 ? '#c05621' : '#276749';
+  const capBg     = count >= 48 ? '#fff5f5' : count >= 45 ? '#fffbeb' : '#f0fff4';
+  const capBorder = count >= 48 ? '#fc8181' : count >= 45 ? '#f6ad55' : '#68d391';
+  const capMsg    = count >= 50 ? '🚨 At cap! Remove expired or off-market listings before posting new ones.'
+                  : count >= 48 ? `⚠️ Nearly at cap — only ${50-count} slot(s) remaining.`
+                  : count >= 45 ? '⚠️ Getting close to the 50-listing cap.'
+                  : `✅ ${50-count} slot${50-count===1?'':'s'} available.`;
+
+  // Ready to post: verified + Apts-eligible + not yet posted
+  const data = loadData();
+  const ready = [];
+  data.weeks.forEach(week => {
+    (week.rows || []).forEach(row => {
+      if (!row.verifiedAt || row.offMarket || row.aptsPostedAt) return;
+      const liveRule = resolveAddr(row.address).listing?.rule || row.rule;
+      if (!platforms(liveRule).apts) return;
+      ready.push({row, week});
+    });
+  });
+
+  let html = `<div class="card">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="background:${capBg};border:2px solid ${capBorder};border-radius:10px;padding:16px 28px;text-align:center;min-width:150px;">
+        <div style="font-size:2.2rem;font-weight:800;color:${capColor};line-height:1;">${count}<span style="font-size:1rem;color:#a0aec0;font-weight:400;"> / 50</span></div>
+        <div style="font-size:.72rem;color:#718096;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Slots Used</div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:.95rem;color:${capColor};font-weight:600;margin-bottom:8px;">${capMsg}</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:#718096;">
+          <span>🚨 Expired: <strong style="color:#c53030;">${sorted.filter(a=>a.daysLeft<=0).length}</strong></span>
+          <span>⚠️ Expiring ≤3 days: <strong style="color:#c05621;">${sorted.filter(a=>a.daysLeft>0&&a.daysLeft<=3).length}</strong></span>
+          <span>⏳ Expiring ≤7 days: <strong style="color:#744210;">${sorted.filter(a=>a.daysLeft>3&&a.daysLeft<=7).length}</strong></span>
+          <span>✅ Active: <strong style="color:#276749;">${sorted.filter(a=>a.daysLeft>7).length}</strong></span>
+        </div>
+      </div>
+      <button class="btn-sm" onclick="buildAptsTab()">↺ Refresh</button>
+    </div>
+    <div style="margin-top:14px;background:#e2e8f0;border-radius:20px;height:10px;overflow:hidden;">
+      <div style="height:100%;width:${Math.min(100,(count/50)*100).toFixed(1)}%;background:${capColor};border-radius:20px;transition:width .3s;"></div>
+    </div>
+  </div>`;
+
+  // Active listings table
+  html += `<div class="card">
+    <div class="gen-header"><h2>📋 Currently Active on Apts.com (${count})</h2></div>`;
+  if (sorted.length === 0) {
+    html += `<p class="empty-state">No listings currently tracked as live on Apts.com.</p>`;
+  } else {
+    html += `<div class="tbl-wrap"><table class="tbl" style="min-width:680px;">
+      <thead><tr>
+        <th>Address</th><th>Community</th><th>City</th>
+        <th style="white-space:nowrap;">Date Posted</th>
+        <th style="white-space:nowrap;">Expires</th>
+        <th class="center" style="white-space:nowrap;">Days Left</th>
+        <th class="center">Remove</th>
+      </tr></thead><tbody>`;
+    sorted.forEach(e => {
+      const dCls   = e.daysLeft <= 0 ? 'flag' : e.daysLeft <= 3 ? 'flag' : e.daysLeft <= 7 ? 'warn' : 'ok';
+      const dLabel = e.daysLeft <= 0 ? '🚨 Expired' : `${e.daysLeft}d`;
+      const addr   = e.unit ? `${e.address}, ${e.unit}` : e.address;
+      const removeBtn = e.source === 'week'
+        ? `<button class="om-btn mark" style="font-size:.75rem;padding:4px 10px;" onclick="removeAptsLive('${e.weekId}',${e.rowIdx})">Remove</button>`
+        : `<button class="om-btn mark" style="font-size:.75rem;padding:4px 10px;" onclick="removeStandaloneApts(${e.idx})">Remove</button>`;
+      html += `<tr class="data-row">
+        <td class="addr">${addr}</td>
+        <td>${e.community||'—'}</td><td>${e.city||'—'}</td>
+        <td style="white-space:nowrap;">${fmtDate(new Date(e.postedAt))}</td>
+        <td style="white-space:nowrap;">${fmtDate(e.expireDate)}</td>
+        <td class="center"><span class="days-badge ${dCls}">${dLabel}</span></td>
+        <td class="center">${removeBtn}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+  html += `</div>`;
+
+  // Ready to post
+  html += `<div class="card">
+    <div class="gen-header"><h2>⏳ Ready to Post on Apts.com (${ready.length})</h2></div>
+    <p class="hint" style="margin-bottom:12px;">Verified listings that qualify for Apts.com but haven't been marked live yet.</p>`;
+  if (ready.length === 0) {
+    html += `<p class="empty-state">No verified listings waiting to be posted.</p>`;
+  } else {
+    ready.forEach(({row, week}) => {
+      const addr = row.unit ? `${row.address}, ${row.unit}` : row.address;
+      html += `<div class="om-result">
+        <div style="flex:1;">
+          <div class="om-result-addr">${addr}</div>
+          <div class="om-result-meta">${[row.community, row.city, week.label].filter(Boolean).join(' · ')}</div>
+        </div>
+        <button class="om-btn" style="background:#ebf8ff;color:#2a4a6b;border:1px solid #bee3f8;font-weight:600;"
+          onclick="markAptsLive('${week.id}',${row.idx})">✅ Mark Live on Apts.com</button>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+
+  // Manual add
+  html += `<div class="card">
+    <label>➕ Add Listing Manually</label>
+    <p class="hint" style="margin-bottom:10px;">For listings already on Apts.com that aren't in a weekly sheet. Leave date blank to use today.</p>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:10px;margin-bottom:10px;">
+      <div><label style="font-size:.78rem;color:#718096;margin-bottom:3px;">Address</label>
+        <input type="text" id="apts-add-address" placeholder="e.g. 123 Oak Street"></div>
+      <div><label style="font-size:.78rem;color:#718096;margin-bottom:3px;">Unit (optional)</label>
+        <input type="text" id="apts-add-unit" placeholder="e.g. Apt 3B"></div>
+      <div><label style="font-size:.78rem;color:#718096;margin-bottom:3px;">Community (optional)</label>
+        <input type="text" id="apts-add-community" placeholder="e.g. Holly Tree"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div><label style="font-size:.78rem;color:#718096;margin-bottom:3px;">City</label>
+        <input type="text" id="apts-add-city" placeholder="e.g. Lancaster"></div>
+      <div><label style="font-size:.78rem;color:#718096;margin-bottom:3px;">Expiration Date (M/D or M/D/YYYY)</label>
+        <input type="text" id="apts-add-expiry" placeholder="e.g. 6/15 — use this OR posted date"></div>
+      <div><label style="font-size:.78rem;color:#718096;margin-bottom:3px;">Date Posted (M/D or M/D/YYYY)</label>
+        <input type="text" id="apts-add-date" placeholder="Leave blank for today"></div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn btn-primary" style="margin:0;width:100%;" onclick="addStandaloneApts()">➕ Add</button>
+      </div>
+    </div>
+    <div id="apts-add-msg" style="font-size:.82rem;"></div>
+  </div>`;
+
+  document.getElementById('apts-tab-content').innerHTML = html;
+}
+
+function markAptsLive(weekId, rowIdx) {
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[rowIdx]) return;
+  week.rows[rowIdx].aptsPostedAt = new Date().toISOString();
+  saveData(data);
+  buildAptsTab();
+  buildHomeTab();
+}
+
+function removeAptsLive(weekId, rowIdx) {
+  if (!confirm('Remove this listing from Apts.com tracking? This frees up a slot.')) return;
+  const data = loadData();
+  const week = data.weeks.find(w => w.id === weekId);
+  if (!week || !week.rows[rowIdx]) return;
+  week.rows[rowIdx].aptsPostedAt = null;
+  saveData(data);
+  buildAptsTab();
+}
+
+function removeStandaloneApts(idx) {
+  if (!confirm('Remove this listing from Apts.com tracking? This frees up a slot.')) return;
+  const arr = getStandaloneApts();
+  arr.splice(idx, 1);
+  saveStandaloneApts(arr);
+  buildAptsTab();
+}
+
+function addStandaloneApts() {
+  const address   = document.getElementById('apts-add-address').value.trim();
+  const unit      = document.getElementById('apts-add-unit').value.trim();
+  const community = document.getElementById('apts-add-community').value.trim();
+  const city      = document.getElementById('apts-add-city').value.trim();
+  const expiryRaw = document.getElementById('apts-add-expiry').value.trim();
+  const dateRaw   = document.getElementById('apts-add-date').value.trim();
+  const msg       = document.getElementById('apts-add-msg');
+  if (!address) { msg.innerHTML = '<span style="color:#c53030;">⚠️ Address is required.</span>'; return; }
+
+  function parseDate(raw) {
+    const parts = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/);
+    if (!parts) return null;
+    const yr = parts[3] ? parseInt(parts[3]) : new Date().getFullYear();
+    return new Date(yr, parseInt(parts[1])-1, parseInt(parts[2]));
+  }
+
+  let postedAt;
+  if (expiryRaw) {
+    // Expiration date takes priority — back-calculate posting date (expiry − 21 days)
+    const expiry = parseDate(expiryRaw);
+    if (!expiry) { msg.innerHTML = '<span style="color:#c53030;">⚠️ Expiration date: use M/D or M/D/YYYY format.</span>'; return; }
+    const posted = new Date(expiry);
+    posted.setDate(posted.getDate() - 21);
+    postedAt = posted.toISOString();
+  } else if (dateRaw) {
+    const posted = parseDate(dateRaw);
+    if (!posted) { msg.innerHTML = '<span style="color:#c53030;">⚠️ Posted date: use M/D or M/D/YYYY format.</span>'; return; }
+    postedAt = posted.toISOString();
+  } else {
+    postedAt = new Date().toISOString();
+  }
+
+  const arr = getStandaloneApts();
+  arr.push({address, unit, community, city, postedAt});
+  saveStandaloneApts(arr);
+  ['apts-add-address','apts-add-unit','apts-add-community','apts-add-city','apts-add-expiry','apts-add-date'].forEach(id => document.getElementById(id).value = '');
+  msg.innerHTML = '<span style="color:#276749;">✅ Added!</span>';
+  setTimeout(() => buildAptsTab(), 500);
+}
+
+// ══════════════════════════════════════════════════════════
+// SEED APTS.COM DATA (runs once on first load)
+// Dates are EXPIRATION dates from Apts.com.
+// Stored as posting date = expiry − 21 days so the 21-day clock works correctly.
+// ══════════════════════════════════════════════════════════
+(function seedAptsData() {
+  const existing = JSON.parse(localStorage.getItem('apts_standalone') || '[]');
+  if (existing.length > 0) return;
+  function d(month, day) {
+    const dt = new Date(2026, month - 1, day);
+    dt.setDate(dt.getDate() - 21);
+    return dt.toISOString();
+  }
+  const seed = [
+    {address:"438 Masonic Drive",        unit:"", community:"",                      city:"Elizabethtown",  postedAt:d(5,20)},
+    {address:"26 Heron Drive",           unit:"", community:"",                      city:"Denver",         postedAt:d(5,27)},
+    {address:"219 N Market St",          unit:"", community:"",                      city:"Elizabethtown",  postedAt:d(5,22)},
+    {address:"4616 Commerce St",         unit:"", community:"Hay Road",              city:"Temple",         postedAt:d(5,22)},
+    {address:"760 Oak Leaf Ln",          unit:"", community:"",                      city:"Harrisburg",     postedAt:d(5,26)},
+    {address:"16 Burk Ct",              unit:"", community:"",                      city:"Womelsdorf",     postedAt:d(5,13)},
+    {address:"605 White Chapel Road",    unit:"", community:"",                      city:"Lancaster",      postedAt:d(5,18)},
+    {address:"1523 Lincoln Heights Ave", unit:"", community:"",                      city:"Ephrata",        postedAt:d(5,1)},
+    {address:"701 Winding Ln",           unit:"", community:"",                      city:"Harrisburg",     postedAt:d(5,2)},
+    {address:"43 Ramsgate Ln",           unit:"", community:"Charleston",            city:"Lancaster",      postedAt:d(5,2)},
+    {address:"474 Mount Sidney Rd",      unit:"", community:"",                      city:"Lancaster",      postedAt:d(5,6)},
+    {address:"52 Hilldale Dr",           unit:"", community:"Covered Bridge Estates",city:"Ephrata",        postedAt:d(5,21)},
+    {address:"74 Gable Dr",              unit:"", community:"",                      city:"Myerstown",      postedAt:d(5,7)},
+    {address:"1513 Lincoln Heights Ave", unit:"", community:"",                      city:"Ephrata",        postedAt:d(5,8)},
+    {address:"607 Beaver Valley Pike",   unit:"", community:"",                      city:"Lancaster",      postedAt:d(5,14)},
+    {address:"2618 Creek Hill Rd",       unit:"", community:"",                      city:"Leola",          postedAt:d(5,28)},
+    {address:"2620 Creek Hill Rd",       unit:"", community:"",                      city:"Leola",          postedAt:d(5,28)},
+    {address:"113 E Chestnut St",        unit:"", community:"",                      city:"Ephrata",        postedAt:d(5,12)},
+    {address:"712 S Broad St",           unit:"", community:"",                      city:"Lititz",         postedAt:d(5,25)},
+    {address:"521 Fox Ridge Ln",         unit:"", community:"",                      city:"Lebanon",        postedAt:d(5,14)},
+    {address:"5 Cobblestone Ct",         unit:"", community:"Stone Gate",            city:"Stevens",        postedAt:d(5,16)},
+    {address:"661 Brunnerville Rd",      unit:"", community:"",                      city:"Lititz",         postedAt:d(5,16)},
+    {address:"2112 Stone Mill Rd",       unit:"", community:"",                      city:"Lancaster",      postedAt:d(5,19)},
+    {address:"112 Garden Avenue",        unit:"", community:"",                      city:"Myerstown",      postedAt:d(5,19)},
+    {address:"104 Nancy Dr",             unit:"", community:"",                      city:"Myerstown",      postedAt:d(5,20)},
+    {address:"609 Byler Cir",            unit:"", community:"",                      city:"Lebanon",        postedAt:d(5,20)},
+    {address:"635 Winding Ln",           unit:"", community:"",                      city:"Harrisburg",     postedAt:d(5,26)},
+    {address:"1042 Martindale Rd",       unit:"", community:"",                      city:"Ephrata",        postedAt:d(5,26)},
+    {address:"6 Parkview Ter",           unit:"", community:"",                      city:"Ephrata",        postedAt:d(5,26)},
+    {address:"684 S Cedar St",           unit:"", community:"",                      city:"Lititz",         postedAt:d(5,28)},
+    {address:"1169 Hammon Ave",          unit:"", community:"Meadow Creek",          city:"Ephrata",        postedAt:d(5,28)},
+    {address:"116 Garden Ave",           unit:"", community:"",                      city:"Myerstown",      postedAt:d(5,28)},
+    {address:"231 S Broad St",           unit:"", community:"",                      city:"Lititz",         postedAt:d(5,28)},
+  ];
+  localStorage.setItem('apts_standalone', JSON.stringify(seed));
+})();
+
+// ── Init ──
+document.getElementById('q').addEventListener('keydown', e => { if(e.key==='Enter') checkPlatform(); });
+buildRefTable();
+buildFridayList();
+buildCommSelect();
+buildHomeTab();
+buildAptsTab();
+
+// ══════════════════════════════════════════════════════════
+// COMMUNITY DETAIL MODAL
+// ══════════════════════════════════════════════════════════
+
+function showCommunityDetail(communityName) {
+  const out = document.getElementById('comm-detail');
+  if (!communityName) { out.innerHTML = ''; return; }
+
+  const fri     = FRIDAY_COMMUNITIES.find(c => c.community === communityName);
+  const streets = LISTINGS.filter(l => l.community && norm(l.community) === norm(communityName));
+  const rule    = fri ? fri.rule : 'unknown';
+  const p       = platforms(rule);
+
+  const streetChips = streets.length
+    ? streets.map(s => `<span class="chip street">📍 ${s.street}</span>`).join('')
+    : `<span class="chip none">No streets on record</span>`;
+
+  const abbrevChips = streets.filter(s => s.abbrev).length
+    ? streets.filter(s => s.abbrev).map(s => `<span class="chip abbrev">🔤 ${s.abbrev}</span>`).join('')
+    : `<span class="chip none">No abbreviations on record</span>`;
+
+  out.innerHTML = `
+    <div style="border-top:1px solid #e2e8f0;padding-top:16px;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+        <span style="font-size:1rem;font-weight:700;color:#2d3748;">${communityName}</span>
+        ${fri?.city ? `<span style="font-size:.85rem;color:#718096;">📍 ${fri.city}</span>` : ''}
+      </div>
+      <div class="modal-section">
+        <h3 style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#a0aec0;margin-bottom:8px;">Street Names</h3>
+        <div class="modal-chips">${streetChips}</div>
+      </div>
+      <div class="modal-section" style="margin-top:12px;">
+        <h3 style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#a0aec0;margin-bottom:8px;">Abbreviations</h3>
+        <div class="modal-chips">${abbrevChips}</div>
+      </div>
+      <div class="modal-section" style="margin-top:12px;">
+        <h3 style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#a0aec0;margin-bottom:8px;">Platform Rules</h3>
+        <div class="modal-platforms">
+          ${pCard('WK Website', p.web)}
+          ${pCard('Zillow',     p.z1)}
+          ${pCard('Zillow 2',  p.z2)}
+          ${pCard('Apts.com',  p.apts)}
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildCommSelect() {
+  const sel = document.getElementById('comm-select');
+  FRIDAY_COMMUNITIES.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.community;
+    opt.textContent = `${c.community} — ${c.city}`;
+    sel.appendChild(opt);
+  });
+}
+
+</script>
+
+
+</body>
+</html>
